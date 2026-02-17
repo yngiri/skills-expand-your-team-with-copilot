@@ -868,6 +868,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Animated Git-style branch lines background
   const canvas = document.getElementById('branch-canvas');
+  if (!canvas) {
+    console.warn('Branch canvas not found, skipping animation');
+    return;
+  }
+  
   const ctx = canvas.getContext('2d');
   
   // Set canvas size
@@ -932,8 +937,17 @@ document.addEventListener("DOMContentLoaded", () => {
     branches.push(new Branch());
   }
   
+  // Animation state
+  let animationFrameId = null;
+  
   // Animation loop
   function animate() {
+    // Skip animation if page is not visible (saves battery/CPU)
+    if (document.hidden) {
+      animationFrameId = requestAnimationFrame(animate);
+      return;
+    }
+    
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     branches.forEach(branch => {
@@ -941,8 +955,16 @@ document.addEventListener("DOMContentLoaded", () => {
       branch.draw();
     });
     
-    requestAnimationFrame(animate);
+    animationFrameId = requestAnimationFrame(animate);
   }
   
+  // Start animation
   animate();
+  
+  // Clean up on page unload
+  window.addEventListener('beforeunload', () => {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
+  });
 });
