@@ -868,103 +868,123 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Animated Git-style branch lines background
   const canvas = document.getElementById('branch-canvas');
-  if (!canvas) {
-    console.warn('Branch canvas not found, skipping animation');
-    return;
-  }
-  
-  const ctx = canvas.getContext('2d');
-  
-  // Set canvas size
-  function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  
-  // Branch class
-  class Branch {
-    constructor() {
-      this.reset();
-    }
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
     
-    reset() {
-      this.x = Math.random() * canvas.width;
-      this.y = Math.random() * canvas.height;
-      this.angle = Math.random() * Math.PI * 2;
-      this.length = 0;
-      this.maxLength = 50 + Math.random() * 100;
-      this.speed = 0.5 + Math.random() * 1;
-      this.color = '#32cd32'; // Lime green
-      this.alpha = 0.3 + Math.random() * 0.4;
+    // Set canvas size
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     
-    update() {
-      this.length += this.speed;
-      if (this.length >= this.maxLength) {
+    // Branch class
+    class Branch {
+      constructor() {
         this.reset();
+      }
+      
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.angle = Math.random() * Math.PI * 2;
+        this.length = 0;
+        this.maxLength = 50 + Math.random() * 100;
+        this.speed = 0.5 + Math.random() * 1;
+        this.color = '#32cd32'; // Lime green
+        this.alpha = 0.3 + Math.random() * 0.4;
+      }
+      
+      update() {
+        this.length += this.speed;
+        if (this.length >= this.maxLength) {
+          this.reset();
+        }
+      }
+      
+      draw() {
+        ctx.save();
+        ctx.strokeStyle = this.color;
+        ctx.globalAlpha = this.alpha;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        const endX = this.x + Math.cos(this.angle) * this.length;
+        const endY = this.y + Math.sin(this.angle) * this.length;
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        
+        // Draw node at the end
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(endX, endY, 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
       }
     }
     
-    draw() {
-      ctx.save();
-      ctx.strokeStyle = this.color;
-      ctx.globalAlpha = this.alpha;
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      
-      ctx.beginPath();
-      ctx.moveTo(this.x, this.y);
-      const endX = this.x + Math.cos(this.angle) * this.length;
-      const endY = this.y + Math.sin(this.angle) * this.length;
-      ctx.lineTo(endX, endY);
-      ctx.stroke();
-      
-      // Draw node at the end
-      ctx.fillStyle = this.color;
-      ctx.beginPath();
-      ctx.arc(endX, endY, 3, 0, Math.PI * 2);
-      ctx.fill();
-      
-      ctx.restore();
+    // Create branches
+    const branches = [];
+    for (let i = 0; i < 15; i++) {
+      branches.push(new Branch());
     }
-  }
-  
-  // Create branches
-  const branches = [];
-  for (let i = 0; i < 15; i++) {
-    branches.push(new Branch());
-  }
-  
-  // Animation state
-  let animationFrameId = null;
-  
-  // Animation loop
-  function animate() {
-    // Skip animation if page is not visible (saves battery/CPU)
-    if (document.hidden) {
+    
+    // Animation state
+    let animationFrameId = null;
+    let isAnimating = false;
+    
+    // Animation loop
+    function animate() {
+      if (!isAnimating) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      branches.forEach(branch => {
+        branch.update();
+        branch.draw();
+      });
+      
       animationFrameId = requestAnimationFrame(animate);
-      return;
     }
     
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Start animation
+    function startAnimation() {
+      if (!isAnimating) {
+        isAnimating = true;
+        animate();
+      }
+    }
     
-    branches.forEach(branch => {
-      branch.update();
-      branch.draw();
+    // Stop animation
+    function stopAnimation() {
+      isAnimating = false;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    }
+    
+    // Listen for page visibility changes to pause/resume animation
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
     });
     
-    animationFrameId = requestAnimationFrame(animate);
-  }
-  
-  // Start animation
-  animate();
-  
-  // Clean up on page unload
-  window.addEventListener('beforeunload', () => {
-    if (animationFrameId) {
-      cancelAnimationFrame(animationFrameId);
+    // Start animation initially if page is visible
+    if (!document.hidden) {
+      startAnimation();
     }
-  });
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      stopAnimation();
+    });
+  }
 });
