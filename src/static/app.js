@@ -981,10 +981,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!document.hidden) {
       startAnimation();
     }
-    
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      stopAnimation();
-    });
   }
 });
